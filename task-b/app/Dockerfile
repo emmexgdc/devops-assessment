@@ -1,32 +1,26 @@
 # ---- Build stage ----
-FROM node:23-alpine3.21 AS build
-
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# Install deps first (better caching)
 COPY package*.json ./
 RUN npm ci --omit=dev
-
-# Copy source
 COPY . .
 
-# ---- Runtime stage ----
-FROM node:23-alpine3.21 AS runtime
-
-ENV NODE_ENV=production
+# ---- Runtime stage (minimal) ----
+FROM alpine:3.23 AS runtime
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Create a non-root user (standard hardening)
-RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
+RUN apk add --no-cache libstdc++ ca-certificates \
+  && addgroup -S nodejs \
+  && adduser -S nodeuser -G nodejs
 
-# Copy only what we need from build stage
+# Copy node runtime
+COPY --from=build /usr/local/bin/node /usr/local/bin/node
+
+# Copy app (includes node_modules from build stage)
 COPY --from=build /app /app
 
-# Drop privileges
 USER nodeuser
-
-# App listens on 3000 (matches your index.js default)
 EXPOSE 3000
-
-# Safer default for containers
 CMD ["node", "index.js"]
