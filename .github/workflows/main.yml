@@ -84,7 +84,8 @@ jobs:
         if: success()
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./task-b/app
+          file: ./task-b/app/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
