@@ -1,16 +1,32 @@
-FROM node:14-highspeed
+# ---- Build stage ----
+FROM node:20-alpine AS build
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Install app dependencies
+# Install deps first (better caching)
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-RUN npm install
-
-# Bundle app source
+# Copy source
 COPY . .
 
+# ---- Runtime stage ----
+FROM node:20-alpine AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Create a non-root user (standard hardening)
+RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
+
+# Copy only what we need from build stage
+COPY --from=build /app /app
+
+# Drop privileges
+USER nodeuser
+
+# App listens on 3000 (matches your index.js default)
 EXPOSE 3000
 
-CMD [ "node", "index.js" ]
+# Safer default for containers
+CMD ["node", "index.js"]
