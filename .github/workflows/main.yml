@@ -49,7 +49,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./task-b/app
+          file: ./task-b/app/Dockerfile
           push: false
           load: true
           tags: ${{ steps.meta.outputs.tags }}
