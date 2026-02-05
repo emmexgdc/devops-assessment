@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sycamore-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sycamore-api
+  template:
+    metadata:
+      labels:
+        app: sycamore-api
+    spec:
+      containers:
+        - name: api
+          image: node:18-alpine
+          command:
+            - "sh"
+            - "-c"
+            - |
+              node -e "
+              const http = require('http');
+              const server = http.createServer((req, res) => {
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end('Sycamore API - Healthy\n');
+              });
+              server.listen(8080, () => {
+                console.log('Server running on port 8080');
+              });
+              "
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
